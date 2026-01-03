@@ -5,7 +5,7 @@ import {
   OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { User } from '../users/entities/user.entity';
+import { User } from '../users/user.entity';
 @Entity('media')
 export class Media {
   @PrimaryGeneratedColumn('uuid')

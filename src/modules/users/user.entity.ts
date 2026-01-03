@@ -12,6 +12,7 @@ import {
 import * as bcrypt from 'bcrypt';
 import { Position } from 'src/modules/position/position.entity';
 import { Media } from 'src/modules/media/media.entity';
+import { Habit } from '../habits/habit.entity';
 
 @Entity('users')
 export class User {
@@ -66,4 +67,8 @@ export class User {
 
   @ManyToOne(() => Media, (media) => media.users, { onDelete: 'SET NULL' })
   avatar: Media;
+
+  @ManyToMany(() => Habit, (habit) => habit.users, { nullable: true })
+  @JoinTable()
+  habits: Habit[];
 }

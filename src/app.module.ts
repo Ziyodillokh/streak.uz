@@ -11,6 +11,7 @@ import { MinioClientModule } from './modules/minio-client/minio-client.module';
 import { PositionModule } from './modules/position/position.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { UserModule } from './modules/users/users.module';
+import { HabitsModule } from './modules/habits/habits.module';
 @Module({
   imports: [
     ScheduleModule.forRoot(),
@@ -33,6 +34,7 @@ import { UserModule } from './modules/users/users.module';
     MediaModule,
     MinioClientModule,
     PositionModule,
+    HabitsModule,
   ],
 
   providers: [IsUniqueConstraint],

@@ -9,7 +9,7 @@ import { Repository } from 'typeorm';
 import { Position } from '../position/position.entity';
 import { CreateUserDto, UpdateUserDto } from './dto';
 import { compare, hash } from 'bcrypt';
-import { User } from './entities/user.entity';
+import { User } from './user.entity';
 
 @Injectable()
 export class UserService {

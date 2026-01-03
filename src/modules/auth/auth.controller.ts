@@ -30,7 +30,7 @@ import { RefreshTokenUserGuard } from './passport-stratagies/refresh-token-user/
 import { REFRESH_TOKEN_USER } from './passport-stratagies/refresh-token-user/refresh-token-user.strategy';
 
 import { GoogleGuard } from './guards/google.oauth.guard';
-import { User } from '../users/entities/user.entity';
+import { User } from '../users/user.entity';
 import { CreateUserDto } from '../users/dto';
 
 const accessTokenOptions: CookieOptions = {

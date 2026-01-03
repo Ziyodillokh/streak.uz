@@ -14,7 +14,7 @@ import { GoogleUser } from './interfaces';
 import { UserService } from '../users/users.service';
 import { ensureEnv } from 'src/infra/shared/helpers/ensureEnv';
 import { CreateUserDto } from '../users/dto';
-import { User } from '../users/entities/user.entity';
+import { User } from '../users/user.entity';
 @Injectable()
 export class AuthService {
   private redis: Redis;

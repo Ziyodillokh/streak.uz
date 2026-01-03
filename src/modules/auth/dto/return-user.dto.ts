@@ -1,6 +1,6 @@
 import { IsNotEmpty, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { User } from 'src/modules/users/entities/user.entity';
+import { User } from 'src/modules/users/user.entity';
 
 class ReturnUser {
   @ApiProperty({
