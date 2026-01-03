@@ -19,7 +19,7 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           password: ${{ secrets.SSH_PASSWORD }}
           script: |
-            cd /root/uzchamp_project
+            cd /root/backend/streak.uz
             git pull origin main
             npm install --force
             npm run build
