@@ -23,4 +23,8 @@ export class HabitsService {
   remove(id: number) {
     return `This action removes a #${id} habit`;
   }
+
+  fix() {
+    return 'fix habit service';
+  }
 }

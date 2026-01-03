@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+} from '@nestjs/common';
 import { HabitsService } from './habits.service';
 import { CreateHabitDto } from './dto/create-habit.dto';
 import { UpdateHabitDto } from './dto/update-habit.dto';
@@ -30,5 +38,10 @@ export class HabitsController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.habitsService.remove(+id);
+  }
+
+  @Get('fix/all')
+  fix() {
+    return this.habitsService.fix();
   }
 }
