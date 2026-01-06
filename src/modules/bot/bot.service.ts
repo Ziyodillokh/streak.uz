@@ -8,7 +8,10 @@ export class BotService {
   private bot: Bot;
 
   constructor(private readonly userService: UserService) {
-    this.bot = new Bot('8304240595:AAEPCCngB2Cu_-b0q5cjN4pj33zTTbHWuhE');
+    this.bot = new Bot(process.env.TELEGRAM_BOT_TOKEN || '');
+
+    console.log(process.env.TELEGRAM_BOT_TOKEN);
+
     this.bot.start();
 
     this.bot.api.setMyCommands([
@@ -29,7 +32,7 @@ export class BotService {
     this.bot.command('start', async (ctx) => {
       const keyboard = new InlineKeyboard().webApp(
         '🌐 Saytni ochish',
-        'https://streak.uz',
+        'https://streak.uz/docs',
       );
 
       await ctx.reply(
