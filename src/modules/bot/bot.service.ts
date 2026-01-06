@@ -6,9 +6,10 @@ import { CreateUserDto } from '../users/dto';
 @Injectable()
 export class BotService {
   private bot: Bot;
-  private readonly CHANNEL_ID = process.env.TELEGRAM_CHANNEL_ID || '';
+  private readonly CHANNEL_ID =
+    process.env.TELEGRAM_CHANNEL_ID || '-1003684753121';
   private readonly CHANNEL_USERNAME =
-    process.env.TELEGRAM_CHANNEL_USERNAME || '';
+    process.env.TELEGRAM_CHANNEL_USERNAME || 'streakuz';
 
   constructor(private readonly userService: UserService) {
     this.bot = new Bot(process.env.TELEGRAM_BOT_TOKEN || '');
