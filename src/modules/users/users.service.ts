@@ -188,4 +188,32 @@ export class UserService {
   async findOneByEmail(email: string): Promise<User | null> {
     return this.userRepository.findOneBy({ email });
   }
+
+  async findByTelegramId(telegramId: string): Promise<User | null> {
+    return await this.userRepository.findOne({
+      where: { id: telegramId },
+    });
+  }
+
+  async findOrCreateByTelegram(telegramData: {
+    telegramId: string;
+    firstName: string;
+    lastName?: string;
+    username?: string;
+    photoUrl?: string;
+  }): Promise<User> {
+    let user = await this.findByTelegramId(telegramData.telegramId);
+
+    if (!user) {
+      user = await this.create({
+        telegramId: String(telegramData.telegramId),
+        firstName: telegramData.firstName,
+        lastName: telegramData.lastName || '',
+        nickname: telegramData.username || `tg_user_${telegramData.telegramId}`,
+        photoUrl: telegramData.photoUrl,
+      } as CreateUserDto);
+    }
+
+    return user;
+  }
 }

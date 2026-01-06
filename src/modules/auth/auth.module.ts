@@ -14,10 +14,12 @@ import { AccessTokenUserGuard } from './passport-stratagies/access-token-user/ac
 import { RolesGuard } from './guards/roles.guard';
 import { GoogleStrategy } from './strategy/google.strategy';
 import { UserModule } from '../users/users.module';
+import { BotModule } from '../bot/bot.module';
 
 @Module({
   imports: [
     UserModule,
+    BotModule,
     PassportModule,
     JwtModule.registerAsync({
       useFactory: (configService: ConfigService) => {

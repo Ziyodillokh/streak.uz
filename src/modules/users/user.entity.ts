@@ -71,4 +71,10 @@ export class User {
   @ManyToMany(() => Habit, (habit) => habit.users, { nullable: true })
   @JoinTable()
   habits: Habit[];
+
+  @Column({ unique: true, nullable: true })
+  telegramId: string;
+
+  @Column({ nullable: true })
+  photoUrl: string;
 }

@@ -11,6 +11,7 @@ import {
   Res,
   UnauthorizedException,
   UseGuards,
+  Inject,
 } from '@nestjs/common';
 import { CookieOptions, Response } from 'express';
 import {
@@ -20,6 +21,7 @@ import {
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
+import { createHash, createHmac } from 'crypto';
 
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto';
@@ -32,6 +34,7 @@ import { REFRESH_TOKEN_USER } from './passport-stratagies/refresh-token-user/ref
 import { GoogleGuard } from './guards/google.oauth.guard';
 import { User } from '../users/user.entity';
 import { CreateUserDto } from '../users/dto';
+import { UserService } from '../users/users.service';
 
 const accessTokenOptions: CookieOptions = {
   secure: true,
@@ -46,7 +49,10 @@ const refreshTokenOptions: CookieOptions = {
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly userService: UserService,
+  ) {}
 
   @Public()
   @UseGuards(LocalAuthGuard)
@@ -149,36 +155,23 @@ export class AuthController {
     return { accessToken, refreshToken, user };
   }
 
-  /**
-   * Google orqali login qilish uchun endpoint.
-   * Bu yerda hech qanday javob qaytarmaslik kerak, faqat guard ishlaydi.
-   * Tekshiruv va log qo'shildi.
-   */
   @Public()
   @Get('google')
   @UseGuards(GoogleGuard)
   googleAuth(@Req() req) {
     console.log('[GOOGLE AUTH] /auth/google endpoint chaqirildi');
-    // Bu yerda hech narsa qaytarmang, GoogleGuard o'zi redirect qiladi.
   }
 
-  /**
-   * Google login callback endpointi.
-   * Bu yerda faqat redirect qilinadi, CORS headerlar kerak emas.
-   * Tekshiruv va log qo'shildi.
-   * Agar curl yoki Swagger orqali chaqirilsa, foydalanuvchiga aniq xabar qaytariladi.
-   */
   @Public()
   @Get('google/callback')
   @UseGuards(GoogleGuard)
   async googleCallback(@Req() req, @Res() res: Response) {
     console.log('[GOOGLE CALLBACK] /auth/google/callback endpoint chaqirildi');
     if (!req.user) {
-      console.error('[GOOGLE CALLBACK] req.user yo‘q!');
-      // Swagger yoki curl orqali chaqirilganda foydalanuvchiga aniq xabar
+      console.error("[GOOGLE CALLBACK] req.user yo'q!");
       return res.status(400).json({
         error:
-          'Google foydalanuvchisi topilmadi. Ushbu endpoint faqat Google OAuth redirect orqali ishlaydi. Iltimos, browser orqali Google login flowdan foydalaning.',
+          'Google foydalanuvchisi topilmadi. Ushbu endpoint faqat Google OAuth redirect orqali ishlaydi.',
       });
     }
     const result = await this.authService.googleLogin(req.user);
@@ -186,7 +179,6 @@ export class AuthController {
     console.log('[GOOGLE CALLBACK] user:', result.user);
     console.log('[GOOGLE CALLBACK] redirectUrl:', redirectUrl);
 
-    // Frontend'ga tokenlar bilan redirect qiladi
     return res.redirect(redirectUrl);
   }
 
@@ -226,5 +218,75 @@ export class AuthController {
   @Get('test')
   async test() {
     return this.authService.test();
+  }
+
+  // Telegram Login Widget callback
+  @Public()
+  @Get('telegram')
+  async telegramAuth(@Query() query: any, @Res() res: Response) {
+    const { hash, ...data } = query;
+
+    // Telegram ma'lumotlarini tekshirish
+    const isValid = this.verifyTelegramData(query);
+
+    if (!isValid) {
+      throw new UnauthorizedException('Invalid Telegram data');
+    }
+
+    try {
+      // Foydalanuvchini topish yoki yaratish
+      const user = await this.authService.telegramLogin({
+        telegramId: data.id,
+        firstName: data.first_name,
+        lastName: data.last_name,
+        username: data.username,
+        photoUrl: data.photo_url,
+      });
+
+      // JWT token yaratish
+      const accessToken = this.authService.getJWT('access', user.id);
+      const refreshToken = this.authService.getJWT('refresh', user.id);
+
+      // Frontend ga redirect qilish
+      return res.redirect(
+        `${process.env.FRONTEND_URL}/auth/success?accessToken=${accessToken}&refreshToken=${refreshToken}`,
+      );
+    } catch (error) {
+      console.error('Telegram auth error:', error);
+      throw new BadRequestException('Telegram orqali kirish xatosi');
+    }
+  }
+
+  // Telegram ma'lumotlarini tekshirish
+  private verifyTelegramData(data: any): boolean {
+    const { hash, ...userData } = data;
+
+    // Bot tokenni .env dan oling
+    const botToken = process.env.TELEGRAM_BOT_TOKEN;
+
+    if (!botToken) {
+      throw new BadRequestException('TELEGRAM_BOT_TOKEN not configured');
+    }
+
+    // Auth date tekshirish (24 soatdan eski bo'lmasligi kerak)
+    const authDate = parseInt(userData.auth_date);
+    const currentTime = Math.floor(Date.now() / 1000);
+
+    if (currentTime - authDate > 86400) {
+      return false; // 24 soatdan eski
+    }
+
+    // Ma'lumotlarni tartiblash va tekshirish
+    const checkString = Object.keys(userData)
+      .sort()
+      .map((key) => `${key}=${userData[key]}`)
+      .join('\n');
+
+    const secretKey = createHash('sha256').update(botToken).digest();
+    const hmac = createHmac('sha256', secretKey)
+      .update(checkString)
+      .digest('hex');
+
+    return hmac === hash;
   }
 }

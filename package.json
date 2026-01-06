@@ -41,6 +41,7 @@
     "cookie-parser": "^1.4.7",
     "dayjs": "^1.11.19",
     "express": "^5.2.1",
+    "grammy": "^1.39.2",
     "ioredis": "^5.8.2",
     "nestjs-minio-client": "^2.2.0",
     "nestjs-typeorm-paginate": "^4.1.0",

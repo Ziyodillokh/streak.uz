@@ -4,6 +4,7 @@ import {
   IsArray,
   IsDate,
   IsEmail,
+  IsNumber,
   IsOptional,
   IsPhoneNumber,
   IsString,
@@ -75,10 +76,19 @@ class CreateUserDto {
   @IsString()
   readonly nickname: string;
 
+  @ApiProperty({ description: `photoUrl`, example: 'admin' })
+  @IsString()
+  readonly photoUrl: string;
+
   @ApiProperty({ description: `password`, example: 'P@ssw0rd' })
   @IsOptional()
   @IsString()
   readonly password: string;
+
+  @ApiProperty({ description: `telegramId`, example: '' })
+  @IsOptional()
+  @IsNumber()
+  readonly telegramId: string;
 
   @ApiProperty({ description: `position id`, example: 'uuid', required: false })
   @IsOptional()

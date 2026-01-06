@@ -1,5 +1,5 @@
 import * as bcrypt from 'bcrypt';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import {
   BadRequestException,
@@ -13,11 +13,13 @@ import Redis from 'ioredis';
 import { GoogleUser } from './interfaces';
 import { UserService } from '../users/users.service';
 import { ensureEnv } from 'src/infra/shared/helpers/ensureEnv';
-import { CreateUserDto } from '../users/dto';
 import { User } from '../users/user.entity';
+import { CreateUserDto } from '../users/dto';
+
 @Injectable()
 export class AuthService {
   private redis: Redis;
+
   constructor(
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
@@ -26,10 +28,11 @@ export class AuthService {
     this.redis = new Redis({
       host: ensureEnv('REDIS_HOST'),
       port: parseInt(ensureEnv('REDIS_PORT'), 10),
-      password: process.env.REDIS_PASSWORD || undefined, // bo‘sh bo‘lsa yubormaydi
+      password: process.env.REDIS_PASSWORD || undefined,
       tls: process.env.REDIS_TLS === 'true' ? {} : undefined,
     });
   }
+
   async validateUserByEmailPassword(login: string, password: string) {
     const user = await this.userService.getByLogin(login);
     console.log('user-->', user);
@@ -53,7 +56,6 @@ export class AuthService {
   async sendVerificationEmail(email: string) {
     const code = Math.floor(100000 + Math.random() * 900000).toString();
 
-    // Redisga kodni 5 daqiqaga saqlaymiz
     await this.redis.set(`verify:${email}`, code, 'EX', 300);
 
     const html = `
@@ -87,7 +89,7 @@ export class AuthService {
     const storedCode = await this.redis.get(`verify:${email}`);
 
     if (!storedCode || storedCode !== code) {
-      throw new BadRequestException('Kod noto‘g‘ri yoki muddati o‘tgan');
+      throw new BadRequestException("Kod noto'g'ri yoki muddati o'tgan");
     }
 
     await this.redis.del(`verify:${email}`);
@@ -141,11 +143,9 @@ export class AuthService {
   }
 
   async googleLogin(googleUser: GoogleUser) {
-    // Email bor-yo'qligini tekshirish
     let user = await this.userService.getByLogin(googleUser.email);
 
     if (!user) {
-      // Yangi user yaratish
       const randomPass = await bcrypt.hash(Math.random().toString(36), 10);
       const dto: CreateUserDto = {
         email: googleUser.email,
@@ -154,16 +154,47 @@ export class AuthService {
         nickname: `google_${googleUser.googleId}`,
         password: randomPass,
         address: '',
+        telegramId: '',
+        photoUrl: googleUser.avatar || '',
       };
       user = await this.userService.register(dto);
     }
 
-    // Token yaratish
     return {
       user,
       accessToken: this.getJWT('access', user.id),
       refreshToken: this.getJWT('refresh', user.id),
     };
+  }
+
+  // Telegram orqali login
+  async telegramLogin(telegramData: {
+    telegramId: string;
+    firstName: string;
+    lastName?: string;
+    username?: string;
+    photoUrl?: string;
+  }): Promise<User> {
+    // Telegram ID orqali foydalanuvchini qidirish
+    let user = await this.userService.findByTelegramId(telegramData.telegramId);
+
+    if (!user) {
+      // Yangi foydalanuvchi yaratish
+      const randomPass = await bcrypt.hash(Math.random().toString(36), 10);
+      const dto: CreateUserDto = {
+        email: `telegram_${telegramData.telegramId}@telegram.user`,
+        firstName: telegramData.firstName,
+        lastName: telegramData.lastName || '',
+        nickname: telegramData.username || `user_${telegramData.telegramId}`,
+        password: randomPass,
+        address: '',
+        telegramId: telegramData.telegramId,
+        photoUrl: telegramData.photoUrl || '',
+      };
+      user = await this.userService.register(dto);
+    }
+
+    return user;
   }
 
   async test() {
@@ -185,13 +216,13 @@ export class AuthService {
 
     const code = Math.floor(100000 + Math.random() * 900000).toString();
 
-    await this.redis.set(`change_password:${email}`, code, 'EX', 180); // 3 daqiqa
+    await this.redis.set(`change_password:${email}`, code, 'EX', 180);
 
     const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <h2>Parolni o'zgartirish tasdiqlash</h2>
+      <h2>Parolni o\'zgartirish tasdiqlash</h2>
       <p>Hurmatli foydalanuvchi,</p>
-      <p>Parolingizni o'zgartirish uchun tasdiqlash kodi:</p>
+      <p>Parolingizni o\'zgartirish uchun tasdiqlash kodi:</p>
       <div style="background-color: #f4f4f4; padding: 15px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px;">
         ${code}
       </div>
@@ -199,7 +230,7 @@ export class AuthService {
         Bu kod 3 daqiqa davomida amal qiladi.
       </p>
       <p style="color: #999; font-size: 12px;">
-        Agar siz bu so'rovni yubormasangiz, bu xabarni e'tiborsiz qoldiring.
+        Agar siz bu so\'rovni yubormasangiz, bu xabarni e'tiborsiz qoldiring.
       </p>
     </div>
   `;
@@ -211,7 +242,7 @@ export class AuthService {
       {
         from: 'UzChamp <noreply@uzchamp.uz>',
         to: email,
-        subject: "Parolni o'zgartirish kodi",
+        subject: "Parolni o\'zgartirish kodi",
         html,
       },
       {
@@ -231,10 +262,9 @@ export class AuthService {
     const storedCode = await this.redis.get(`change_password:${email}`);
 
     if (!storedCode || storedCode !== code) {
-      throw new BadRequestException("Kod noto'g'ri yoki muddati o'tgan");
+      throw new BadRequestException("Kod noto\'g'ri yoki muddati o\'tgan");
     }
 
-    // ✅ To'g'ri kalit bilan o'chirish
     await this.redis.del(`change_password:${email}`);
     return { message: 'Kod tasdiqlandi' };
   }
@@ -251,6 +281,6 @@ export class AuthService {
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     await this.userService.update(user.id, { password: hashedPassword });
 
-    return { message: "Parol muvaffaqiyatli o'zgartirildi" };
+    return { message: "Parol muvaffaqiyatli o\'zgartirildi" };
   }
 }
