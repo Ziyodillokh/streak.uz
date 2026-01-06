@@ -11,7 +11,10 @@ export class BotService implements OnModuleInit {
     process.env.TELEGRAM_CHANNEL_USERNAME || 'streakuz';
 
   constructor(private readonly userService: UserService) {
-    this.bot = new Bot(process.env.TELEGRAM_BOT_TOKEN!);
+    if (!process.env.TELEGRAM_BOT_TOKEN) {
+      throw new Error('TELEGRAM_BOT_TOKEN is not defined!');
+    }
+    this.bot = new Bot(process.env.TELEGRAM_BOT_TOKEN);
   }
 
   get getBot() {
@@ -20,17 +23,27 @@ export class BotService implements OnModuleInit {
 
   /** 🔹 Bot faqat BIR marta ishga tushadi */
   async onModuleInit() {
-    await this.bot.api.deleteWebhook({ drop_pending_updates: true });
+    try {
+      await this.bot.api.deleteWebhook({ drop_pending_updates: true });
 
-    this.bot.api.setMyCommands([
-      { command: 'start', description: 'Botni ishga tushirish' },
-      { command: 'help', description: 'Yordam' },
-    ]);
+      await this.bot.api.setMyCommands([
+        { command: 'start', description: 'Botni ishga tushirish' },
+        { command: 'help', description: 'Yordam' },
+      ]);
 
-    this.setCommands();
+      this.setCommands();
 
-    await this.bot.start();
-    console.log('🤖 Bot started');
+      // Bot xatolarini tutish
+      this.bot.catch((err) => {
+        console.error('❌ Bot Error:', err.error);
+      });
+
+      // Botni ishga tushurish (async, serverni bloklamaydi)
+      this.bot.start();
+      console.log('🤖 Bot started');
+    } catch (err) {
+      console.error('BotService onModuleInit error:', err);
+    }
   }
 
   /** 🔹 PUBLIC kanal obunasini tekshirish */
@@ -40,7 +53,6 @@ export class BotService implements OnModuleInit {
         `@${this.CHANNEL_USERNAME}`,
         userId,
       );
-
       return ['creator', 'administrator', 'member'].includes(member.status);
     } catch (error: any) {
       console.error(
@@ -51,13 +63,14 @@ export class BotService implements OnModuleInit {
     }
   }
 
+  /** 🔹 Bot komandalarini sozlash */
   private setCommands() {
+    // /start komandasi
     this.bot.command('start', async (ctx) => {
       const userId = ctx.from?.id;
       if (!userId) return;
 
       const isSubscribed = await this.checkChannelSubscription(userId);
-
       if (!isSubscribed) {
         const keyboard = new InlineKeyboard()
           .url(
@@ -77,15 +90,14 @@ export class BotService implements OnModuleInit {
       await this.sendWelcome(ctx);
     });
 
+    // Obuna tekshirish tugmasi
     this.bot.callbackQuery('check_subscription', async (ctx) => {
       const userId = ctx.from?.id;
       if (!userId) return;
 
-      // ⏳ Telegram cache delay
       await new Promise((r) => setTimeout(r, 1500));
 
       const isSubscribed = await this.checkChannelSubscription(userId);
-
       if (!isSubscribed) {
         await ctx.answerCallbackQuery({
           text: '❌ Siz hali kanalga obuna bo‘lmadingiz!',
@@ -98,14 +110,14 @@ export class BotService implements OnModuleInit {
       await this.sendWelcome(ctx, true);
     });
 
+    // /help komandasi
     this.bot.command('help', async (ctx) => {
       await ctx.reply(
-        '📖 Yordam:\n\n' +
-          '/start - Botni ishga tushirish\n' +
-          '/help - Yordam',
+        '📖 Yordam:\n\n/start - Botni ishga tushirish\n/help - Yordam',
       );
     });
 
+    // Matn xabarlari
     this.bot.on('message:text', async (ctx) => {
       const userId = ctx.from?.id;
       if (!userId) return;
@@ -114,7 +126,6 @@ export class BotService implements OnModuleInit {
       if (!isSubscribed) return;
 
       const chat = ctx.chat;
-
       const existingUser = await this.userService.findByTelegramId(
         String(chat.id),
       );
@@ -142,9 +153,7 @@ export class BotService implements OnModuleInit {
     );
 
     const text =
-      '👋 Assalomu alaykum!\n\n' +
-      '🎯 Streak.uz platformasiga xush kelibsiz!\n\n' +
-      '🌐 Saytga o‘tish uchun pastdagi tugmani bosing.';
+      '👋 Assalomu alaykum!\n\n🎯 Streak.uz platformasiga xush kelibsiz!\n\n🌐 Saytga o‘tish uchun pastdagi tugmani bosing.';
 
     if (edit) {
       await ctx.editMessageText(text, { reply_markup: keyboard });
