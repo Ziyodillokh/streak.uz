@@ -52,6 +52,8 @@ async function bootstrap() {
     }),
   );
 
+  app.setGlobalPrefix('api');
+
   const reflector = app.get(Reflector);
   app.useGlobalGuards(
     new AccessTokenUserGuard(reflector),

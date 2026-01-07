@@ -149,7 +149,7 @@ export class BotService implements OnModuleInit {
   private async sendWelcome(ctx: any, edit = false) {
     const keyboard = new InlineKeyboard().webApp(
       '🌐 Saytni ochish',
-      'https://streak.uz/docs',
+      'https://streak.uz/api/docs',
     );
 
     const text =
