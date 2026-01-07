@@ -10,7 +10,6 @@ import * as process from 'process';
 import { AccessTokenUserGuard } from './modules/auth/passport-stratagies/access-token-user/access-token-user.guard';
 import { RolesGuard } from './modules/auth/guards/roles.guard';
 import { ErrorFilter } from './infra/validators';
-import { join } from 'path';
 
 const logging = new Logger('Request Middleware', { timestamp: true });
 
@@ -21,7 +20,6 @@ async function bootstrap() {
   });
 
   useContainer(app.select(AppModule), { fallbackOnErrors: true });
-  app.useStaticAssets(join(__dirname, 'uploads'));
 
   app.use(bodyParser.text({ type: 'application/xml' }));
 
