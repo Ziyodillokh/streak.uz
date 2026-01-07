@@ -26,9 +26,11 @@ import { HabitsModule } from './modules/habits/habits.module';
         configService.getOrThrow('database'),
       inject: [ConfigService],
     }),
+
     ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '../uploads'),
+      rootPath: join(__dirname, '../../frontend/PROGROW/dist'),
     }),
+
     AuthModule,
     UserModule,
     MediaModule,
