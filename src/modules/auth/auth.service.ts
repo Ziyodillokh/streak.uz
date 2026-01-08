@@ -54,35 +54,48 @@ export class AuthService {
   }
 
   async sendVerificationEmail(email: string) {
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    try {
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
 
-    await this.redis.set(`verify:${email}`, code, 'EX', 300);
+      // Redis ga saqlash
+      await this.redis.set(`verify:${email}`, code, 'EX', 300);
 
-    const html = `
+      const html = `
       <div style="font-family: Arial, sans-serif;">
         <h2>Email verification</h2>
         <p>Your code is: <strong>${code}</strong></p>
       </div>
     `;
 
-    const apiKey = this.configService.get<string>('RESEND_API_KEY');
-    await axios.post(
-      'https://api.resend.com/emails',
-      {
-        from: 'onboarding@resend.dev',
-        to: email,
-        subject: 'Your Verification Code',
-        html,
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
-      },
-    );
+      // API key tekshirish
+      const apiKey = this.configService.get<string>('RESEND_API_KEY');
+      if (!apiKey) {
+        throw new Error('RESEND_API_KEY undefined');
+      }
 
-    return { message: 'Kod yuborildi', email };
+      await axios.post(
+        'https://api.resend.com/emails',
+        {
+          from: 'onboarding@resend.dev',
+          to: email,
+          subject: 'Your Verification Code',
+          html,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+          },
+        },
+      );
+
+      return { message: 'Kod yuborildi', email };
+    } catch (error) {
+      console.error('sendVerificationEmail error:', error.message || error);
+      throw new InternalServerErrorException(
+        'Email yuborishda xato. Iltimos, keyinroq urinib ko‘ring',
+      );
+    }
   }
 
   async verifyEmailCode(email: string, code: string) {
