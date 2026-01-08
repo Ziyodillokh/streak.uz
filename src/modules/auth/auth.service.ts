@@ -69,7 +69,7 @@ export class AuthService {
     await axios.post(
       'https://api.resend.com/emails',
       {
-        from: 'UzChamp <noreply@uzchamp.uz>',
+        from: 'onboarding@resend.dev',
         to: email,
         subject: 'Your Verification Code',
         html,
