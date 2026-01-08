@@ -117,12 +117,14 @@ export class AuthController {
     return { accessToken, refreshToken, user };
   }
 
+  @Public()
   @Post('send-code')
   @ApiQuery({ name: 'email', type: String })
   sendCode(@Query('email') email: string) {
     return this.authService.sendVerificationEmail(email);
   }
 
+  @Public()
   @Post('verify-code')
   @ApiQuery({ name: 'email', type: String, required: true })
   @ApiQuery({ name: 'code', type: String, required: true })
